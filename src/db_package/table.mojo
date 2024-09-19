@@ -165,11 +165,11 @@ struct DBTable:
     # Methods: update/write
     # ===-------------------------------------------------------------------===#
 
-    fn addEmptyCol(inout self, columnNames: List[String]) raises:
+    fn add_empty_col(inout self, columnNames: List[String]) raises:
         for col in range(len(columnNames)):
             self.table.append(-1)
 
-    fn addCol(inout self, owned *columns: List[Int], columnNames: List[String]) raises:
+    fn add_col(inout self, owned *columns: List[Int], columnNames: List[String]) raises:
         if len(columnNames) != len(columns):
             raise('DBTable - addCol Error: number of columns added must match number of column names')
         for col in columns:
@@ -178,7 +178,7 @@ struct DBTable:
             for val in col[]:
                 self.table.append(val[])
 
-    fn addCol(inout self, owned columns: List[List[Int]], columnNames: List[String]) raises:
+    fn add_col(inout self, owned columns: List[List[Int]], columnNames: List[String]) raises:
         if len(columnNames) != len(columns):
             raise('DBTable - addCol Error: number of columns added must match number of column names')
         for col in columns:
@@ -207,6 +207,7 @@ struct DBTable:
         #rows for the first column
         var start = now()
         var valSet = Set[Int](columnValues[0])
+        
         for row in range(numOfRows):
             if self[row] in valSet:
                 resSet.add(row)
@@ -215,15 +216,32 @@ struct DBTable:
 
         #remove rows from resSet that are not true for other filter columns
         start = now()
-        for col in range(filter_column_len): 
+        for col in range(1, filter_column_len): 
             valSet = Set(columnValues[col])
             for row in resSet:
                 if self[col,row[]] not in valSet:
                     resSet.remove(row[])
-
         print('combine OR vals & find common rows')    
         print(str((now()-start)/1_000_000_000)+'sec')
 
+        
+        print('-----------------------------')
+        print('TOTAL FILTER TIME: '+str((now()-total)/1_000_000_000)+'sec')
+        return resSet^
+    
+    fn filter(self, columns: Int, columnValues: List[Int]) raises -> Set[Int]:
+        print('Filtering....')
+        print('-----------------------------')
+        var resSet = Set[Int]()
+        var total = now()
+        
+        var start = now()
+        var valSet = Set[Int](columnValues)
+        for row in range(self.numOfRows):
+            if self[row] in valSet:
+                resSet.add(row)
+        print('get rowlist from first column')    
+        print(str((now()-start)/1_000_000_000)+'sec')
         
         print('-----------------------------')
         print('TOTAL FILTER TIME: '+str((now()-total)/1_000_000_000)+'sec')
@@ -234,18 +252,13 @@ struct DBTable:
     #     1. could have index 0 of each column contain the identifier
     #     2. could pass lookup to return table (requires lookup to be apart of table?)
     #     3. could have a list of column names (Trying THIS)
-    fn applySettings(self, rowSet: Set[Int], colList: List[Int] = List[Int]()) raises -> Self:
+    fn apply_settings(self, rowSet: Set[Int], colList: List[Int]) raises -> Self:
         var numOfRows = len(rowSet)
-        var numOfColumns: Int
+        var numOfColumns= len(colList)
         var retColNames = List[String]()
         
-        if len(colList) == 0:
-            numOfColumns = self.numOfColumns
-            retColNames = self.columnNames
-        else:
-            numOfColumns = len(colList)
-            for ind in colList:
-                retColNames.append(self.columnNames[ind[]])
+        for ind in colList:
+            retColNames.append(self.columnNames[ind[]])
 
         var retTab = DBTable(numOfColumns = numOfColumns, numOfRows = numOfRows, columnNames = retColNames)
         for col in colList:
@@ -254,11 +267,44 @@ struct DBTable:
         
         return retTab^
     
+    fn apply_settings(self, rowSet: Set[Int]) raises -> Self:
+        var numOfRows = len(rowSet)
+
+        var retTab = DBTable(numOfColumns = self.numOfColumns, numOfRows = self.numOfRows, columnNames = self.columnNames)
+        for col in range(self.numOfColumns):
+            for row in rowSet:
+                retTab.table.append(self[col,row[]])
+        
+        return retTab^
+    
     #TODO Order by 
     # fn orderBy(self, orderCols: List[Int]) raises -> List[Int]:
 
     #TODO Group by
     # fn groupBy(self, groupCols: List[Int], metric: fn) raises -> Self:
+
+    #TODO countDistinct
+    fn count_distinct(self, cols: List[Int], rowSet: Set[Int]) raises -> List[Int]:
+        var ret_list = List[Int]()
+        var dist_set: Set[Int]
+        
+        for col in cols:
+            dist_set = Set[Int]()
+            for row in rowSet:
+                dist_set.add(self[col[],row[]])
+            ret_list.append(len(dist_set))
+        
+        return ret_list^
+
+    fn count_distinct(self, cols: Int, rowSet: Set[Int]) raises -> Int:
+        var dist_set = Set[Int]()
+
+        for row in rowSet:
+            dist_set.add(self[cols,row[]])
+        
+        return len(dist_set)
+
+
 
     #TODO
     #joins

@@ -1,6 +1,7 @@
 from db_package.table import DBTable
 from collections.set import Set
 from testing import assert_equal, assert_not_equal, assert_false, assert_raises, assert_true
+from algorithm.functional import parallelize
 
 
 alias tab_row_count = 5 
