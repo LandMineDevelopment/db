@@ -5,12 +5,13 @@ from algorithm import vectorize, parallelize
 from sys import simdwidthof
 from memory.memory import memset_zero, memset
 from collections.dict import Dict, _DictKeyIter, _DictValueIter, _DictEntryIter
-from collections.set import Set
+from db_package.set import Set
 from python import Python
+from memory.reference import Reference
 
 alias col_count = 1_000 
-alias row_count = 1_000_000
-alias val_range = 100_000
+alias row_count = 5_000
+alias val_range = 1_000
 alias filter_col_count = 1_000
 alias filter_val_range = 1_000
 
@@ -19,7 +20,7 @@ fn createTable() raises -> DBTable:
     @parameter
     for col in range(col_count):
         for row in range(row_count):
-            tab[col*row_count + row] = row%val_range
+            tab.table.append(row%val_range)
     return tab^
 
 fn createRandomTable() raises -> DBTable:
@@ -46,6 +47,15 @@ fn createFilterVals() -> List[List[Int]]:
         outer.append(inner)
     return outer^
 
+fn createFilterSets() -> List[Set[Int]]:
+    var outer = List[Set[Int]]()
+    var inner: Set[Int]
+    for x in range(filter_col_count):
+        inner = Set[Int]()
+        for y in range(filter_val_range):
+            inner.add(y)
+        outer.append(inner)
+    return outer^
 
 alias type = DType.uint32
 alias nelts = simdwidthof[type]() * 2
@@ -141,17 +151,17 @@ def main():
     print('filter_col_count: ' +str(filter_col_count))
     print('filter_val_range: ' +str(filter_val_range))
 
-    print('creating Matrix...')
-    var start = now()
-    var m = Matrix[col_count, row_count]()
-    print(str((now()-start)/1_000_000_000)+'sec')
+    # print('creating Matrix...')
+    # var start = now()
+    # var m = Matrix[col_count, row_count]()
+    # print(str((now()-start)/1_000_000_000)+'sec')
 
     print('filling Matrix...')
     start = now()
     #pop table
-    for y in range(col_count):
-        for x in range(row_count):
-            m[y,x] = x%val_range
+    # for y in range(col_count):
+    #     for x in range(row_count):
+    #         m[y,x] = x%val_range
             # m[y,x] = int(random_ui64(SIMD[DType.uint64, 1](0),SIMD[DType.uint64, 1](val_range)) )
     print(str((now()-start)/1_000_000_000)+'sec')
     
@@ -159,6 +169,7 @@ def main():
     start = now()
     var filCols = createFilterCols()
     var filVals = createFilterVals()
+    # var filVals = createFilterSets()
     print(str((now()-start)/1_000_000_000)+'sec')
     
     
@@ -188,10 +199,22 @@ def main():
     var t = createTable()
     start = now()
     print('Testing DBTable Filter...')
-    var s = t.filter(filCols, filVals)
+    print('Testing join...')
+    # var s = t.filter(filCols, filVals)
+    print('t',len(t.table))
+    var t2 = t
+
+    # print(str(t))
+    # print('---------')
+    # print(str(t2))
+
+    # print(t == t2)
+    var t3 = t.inner_join(other = t2, self_join_cols = List(2), other_join_cols = List(2), self_ret_cols = List(0,1), other_ret_cols = List(1,2))
+    # print(str(t3))
+
     print(str((now()-start)/1_000_000_000)+'sec')
-    count = 0
-    print(len(s))
+    # count = 0
+    # print(len(s))
     # var my_set = Set(int(Scalar[DType.uint8](1)))
     # var j = List(Scalar[DType.uint8](1),Scalar[DType.uint8](2),Scalar[DType.uint8](3))
     # print(j.data.load[width = 3](0))
@@ -201,6 +224,4 @@ def main():
     # memset_zero(base,8)
     # print(base.load[width = 2](1))
     # # print(j.unsafe_ptr())
-
-    # print(j.data)
 
