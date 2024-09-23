@@ -9,11 +9,11 @@ from db_package.set import Set
 from python import Python
 from memory.reference import Reference
 
-alias col_count = 1_000 
-alias row_count = 5_000
+alias col_count = 100 
+alias row_count = 100_000
 alias val_range = 1_000
-alias filter_col_count = 1_000
-alias filter_val_range = 1_000
+alias filter_col_count = 5
+alias filter_val_range = 5
 
 fn createTable() raises -> DBTable:
     var tab = DBTable(numOfColumns = col_count, numOfRows = row_count)

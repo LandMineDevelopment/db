@@ -374,15 +374,20 @@ struct DBTable:
         var new_row_count = 0
         var new_col_count = len(self_ret_cols) + len(other_ret_cols)
 
-        for j in range(len(self_join_cols)):
-            for s_row in range(self.numOfRows):
-                for o_row in range(other.numOfRows):
-                    if self[self_join_cols[j],s_row] == other[other_join_cols[j],o_row]:
-                        for i in self_ret_cols:
-                            ret_row.append(self[i[],s_row])
-                        for i in other_ret_cols:
-                            ret_row.append(other[i[],o_row])
-                        new_row_count += 1
+        var match_all: Bool
+        for s_row in range(self.numOfRows):
+            for o_row in range(other.numOfRows):
+                match_all = True
+                for j in range(len(self_join_cols)):
+                    if self[self_join_cols[j],s_row] != other[other_join_cols[j],o_row]:
+                        match_all = False
+                        break
+                if match_all:
+                    for i in self_ret_cols:
+                        ret_row.append(self[i[],s_row])
+                    for i in other_ret_cols:
+                        ret_row.append(other[i[],o_row])
+                    new_row_count += 1
 
         if new_row_count == 0:
             return DBTable(0,0)
@@ -399,3 +404,9 @@ struct DBTable:
                 ret_tab.table.append(ret_row[row*new_col_count+col])
         
         return ret_tab^
+
+    # fn inner_join(self, other: Self, self_join_cols: List[Int], other_join_cols: List[Int], self_set: Set[Int] = Set[Int](), other_set: Set[Int] = Set[Int]()) raises -> (Set[Int],Set[Int]):
+    #     var new_self_set = Set[Int]()
+    #     var new_other_set = Set[Int]()
+
+
